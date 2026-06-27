@@ -74,9 +74,9 @@
     display:block;
   }
 
-  /* fade-out only: appears instantly (no transition in), disappears slowly */
+  /* 0.5 seconds linear animation for fading out */
   #jumpscare.fading{
-    transition: opacity 1.2s linear;
+    transition: opacity 0.5s linear; 
   }
 </style>
 </head>
@@ -85,33 +85,33 @@
   <div class="landing" id="landing">
     <div class="titlebar">FREE 1,000,000 ROBOX 100% NO VIRUS  INSTANT</div>
     <div class="imgFrame" id="imgFrame">
-      <img id="prankImg" src="https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg" alt="">
+      <img id="prankImg" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSULczY_gCRCT6O73v6ucSWx7x8K0VVm14UpQ&s" alt="">
     </div>
   </div>
 
   <div id="jumpscare">
-    <img src="https://i.pinimg.com/736x/c6/bf/30/c6bf3005814067707dff126cdf83029a.jpg" alt="">
+    <img src="https://i.pinimg.com/736x/0e/34/c1/0e34c11574e7f2b96c016694d8b79748.jpg" alt="">
   </div>
 
-  <audio id="prankAudio" src="https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3" loop preload="auto"></audio>
+  <audio id="fartAudio" src="https://embarrassing-brown-oa7iij3e.edgeone.dev/Bark%20Fart%20Sound%20Effect.mp3" preload="auto"></audio>
+  <audio id="popupAudio" src="https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3" loop preload="auto"></audio>
 
   <script>
     // =====================================================================
     // CONFIG
     // =====================================================================
-    const SOUND_URL  = "https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3";
-    const IMAGE_URL   = "https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg";
-    const JUMPSCARE_IMG_URL = "https://i.pinimg.com/736x/c6/bf/30/c6bf3005814067707dff126cdf83029a.jpg";
+    const POPUP_SOUND_URL = "https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3";
+    const POPUP_IMAGE_URL = "https://i.pinimg.com/1200x/06/f4/13/06f41331dc778762234ef181f7dc5178.jpg";
 
-    // BPM of basuri.mp3 - the popup window's jump is timed to this beat
     const BPM = 142;
 
     const imgFrame    = document.getElementById('imgFrame');
-    const prankImg     = document.getElementById('prankImg');
-    const jumpscareEl   = document.getElementById('jumpscare');
-    const originalAudio = document.getElementById('prankAudio');
+    const prankImg    = document.getElementById('prankImg');
+    const jumpscareEl = document.getElementById('jumpscare');
+    const fartAudio   = document.getElementById('fartAudio');
+    const popupAudio  = document.getElementById('popupAudio');
 
-    let dodgeCount = 0;
+    let clickCount = 0;
     let dodging = false;
 
     // -----------------------------------------------------------------
@@ -142,12 +142,9 @@
     }
 
     // -----------------------------------------------------------------
-    // DODGE BEHAVIOR (first 2 attempts): image runs away in a straight
-    // line to a random spot well inside the screen (never at the very
-    // edges). Jumpscare image appears INSTANTLY at full opacity, then
-    // fades out slowly. No sound plays for this anymore.
+    // DODGE BEHAVIOR
     // -----------------------------------------------------------------
-    function dodgeImage(){
+    function dodgeImage(triggerJumpscare){
       if (dodging) return;
       dodging = true;
 
@@ -164,18 +161,28 @@
       const targetX = minX + Math.random() * Math.max(1, (maxX - minX));
       const targetY = minY + Math.random() * Math.max(1, (maxY - minY));
 
-      // jumpscare: show INSTANTLY at full opacity (no fade-in), then fade out slowly
-      jumpscareEl.classList.remove('fading'); // strip transition so the appear is instant
-      jumpscareEl.classList.add('show');
-      jumpscareEl.style.opacity = '1';
+      if (triggerJumpscare) {
+        playAudioReliably(fartAudio);
+        
+        // Show instantly at full opacity
+        jumpscareEl.classList.remove('fading'); 
+        jumpscareEl.classList.add('show');
+        jumpscareEl.style.opacity = '1';
 
-      // next frame: add the fade transition and drop opacity to 0 -> slow disappear
-      requestAnimationFrame(() => {
-        jumpscareEl.classList.add('fading');
-        jumpscareEl.style.opacity = '0';
-      });
+        // Next frame: drop opacity to 0 to trigger the 0.5s transition
+        requestAnimationFrame(() => {
+          jumpscareEl.classList.add('fading');
+          jumpscareEl.style.opacity = '0';
+        });
 
-      // animate the image running away in a straight line, linear, ~350ms
+        // Cleanup after transition finishes (500ms + buffer)
+        setTimeout(() => {
+          jumpscareEl.classList.remove('show');
+          jumpscareEl.classList.remove('fading');
+        }, 600);
+      }
+
+      // animate the image running away
       const duration = 350;
       const t0 = performance.now();
 
@@ -193,12 +200,6 @@
         }
       }
       requestAnimationFrame(frame);
-
-      // fully hide + reset after the fade-out transition finishes (1.2s)
-      setTimeout(() => {
-        jumpscareEl.classList.remove('show');
-        jumpscareEl.classList.remove('fading');
-      }, 1300);
     }
 
     window.addEventListener('load', () => {
@@ -209,30 +210,29 @@
       imgFrame.style.margin = '0';
     });
 
-    imgFrame.addEventListener('mouseenter', () => {
-      if (dodgeCount < 2) {
-        dodgeCount++;
-        dodgeImage();
-      }
-    });
-
+    // -----------------------------------------------------------------
+    // CLICK LISTENER: 3 Stages
+    // -----------------------------------------------------------------
     prankImg.addEventListener('click', (e) => {
       e.stopPropagation();
+      clickCount++;
 
-      if (dodgeCount < 2) {
-        dodgeCount++;
-        dodgeImage();
-        return;
+      if (clickCount === 1) {
+        // 1st click: Just dodge, no jumpscare
+        dodgeImage(false);
+      } 
+      else if (clickCount === 2) {
+        // 2nd click: Dodge + Jumpscare + Sound
+        dodgeImage(true);
+      } 
+      else if (clickCount >= 3) {
+        // 3rd click: Open popup window
+        triggerPrank();
       }
-
-      triggerPrank();
     });
 
-    // -----------------------------------------------------------------
-    // TRIGGER: play sound here, open the jumping popup window
-    // -----------------------------------------------------------------
     function triggerPrank(){
-      playAudioReliably(originalAudio);
+      playAudioReliably(popupAudio);
 
       const popupW = 400;
       const popupH = 400;
@@ -245,17 +245,7 @@
     }
 
     // -----------------------------------------------------------------
-    // POPUP WINDOW HTML: the OS WINDOW ITSELF jumps and bounces.
-    //
-    // IMPORTANT FIX: this loop now runs on setInterval instead of
-    // requestAnimationFrame. Chrome (and other browsers) heavily
-    // throttle rAF and JS timers once a window loses focus or is
-    // treated as backgrounded - that throttling is what was causing
-    // the jump to slow down/stop over time. Audible tabs/windows are
-    // exempted from this throttling, and setInterval at a fixed
-    // interval survives backgrounding far better than rAF does.
-    // The window size is also locked and re-asserted every tick so
-    // nothing can silently resize it.
+    // POPUP HTML
     // -----------------------------------------------------------------
     function getPopupHTML(popupW, popupH){
       return `
@@ -285,10 +275,9 @@
 </style>
 </head>
 <body>
-  <img id="img" src="${IMAGE_URL}" alt="">
-  <audio id="a" src="${SOUND_URL}" loop preload="auto"></audio>
+  <img id="img" src="${POPUP_IMAGE_URL}" alt="">
+  <audio id="a" src="${POPUP_SOUND_URL}" loop preload="auto"></audio>
   <script>
-    // ---- audio reliability fix ----
     const a = document.getElementById('a');
     function tryPlay(){
       a.currentTime = 0;
@@ -302,8 +291,6 @@
     if (a.readyState >= 3) { tryPlay(); }
     else { a.load(); a.addEventListener('canplaythrough', tryPlay, { once:true }); tryPlay(); }
 
-    // ---- window jump + bounce, driven by setInterval (NOT rAF) so it
-    //      keeps running even when the window is backgrounded/loses focus ----
     const screenW = window.screen.availWidth;
     const screenH = window.screen.availHeight;
     const winW = ${popupW};
@@ -355,17 +342,16 @@
       }
     }
 
-    const TICK_MS = 16; // ~60fps target, but tolerant if the browser delivers it slower
+    const TICK_MS = 16; 
     let startTime = performance.now();
     let lastTickTime = startTime;
 
     function tick(){
       const now = performance.now();
-      const dt = (now - lastTickTime) / 1000; // actual elapsed seconds since last tick
+      const dt = (now - lastTickTime) / 1000; 
       lastTickTime = now;
       const elapsed = (now - startTime) / 1000;
 
-      // horizontal: constant speed, instantly reverses at screen edges
       x += vx * direction * dt;
       if (x <= 0) {
         x = 0;
@@ -375,7 +361,6 @@
         direction = -1;
       }
 
-      // vertical: BPM-synced jump, repeats forever, off the bottom of the screen
       const elapsedInBeat = elapsed % beatDuration;
       const beatIndex = Math.floor(elapsed / beatDuration);
       maybeStartBarrelRoll(beatIndex);
@@ -385,11 +370,10 @@
 
       try {
         window.moveTo(Math.round(x), Math.round(y));
-        // re-lock the size every tick in case anything tries to change it
         if (window.outerWidth !== winW || window.outerHeight !== winH) {
           window.resizeTo(winW, winH);
         }
-      } catch(e) { /* some browsers may restrict this, fail silently */ }
+      } catch(e) { }
     }
 
     try { window.moveTo(Math.round(x), groundY); } catch(e) {}
@@ -402,6 +386,5 @@
 </html>`;
     }
   </script>
-
 </body>
 </html>
