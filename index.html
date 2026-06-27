@@ -34,7 +34,6 @@
     text-align:left;
   }
 
-  /* REMOVED fixed width/height so it hugs the image size naturally */
   .imgFrame{
     border:2px inset #fff;
     background:#888;
@@ -43,7 +42,6 @@
     display:inline-block;
   }
 
-  /* Added max-width/height to scale down while keeping original aspect ratio */
   #prankImg{
     max-width: 300px;
     max-height: 300px;
@@ -111,6 +109,19 @@
     const popupAudio  = document.getElementById('popupAudio');
 
     let clickCount = 0;
+    let dodging = false;
+    
+    // Default popup dimensions in case the image fails to load
+    let originalPopupW = 400; 
+    let originalPopupH = 400;
+
+    // Preload the popup image in the background to grab its original natural size
+    const preloader = new Image();
+    preloader.onload = () => {
+      originalPopupW = preloader.naturalWidth;
+      originalPopupH = preloader.naturalHeight;
+    };
+    preloader.src = POPUP_IMAGE_URL;
 
     // -----------------------------------------------------------------
     // AUDIO RELIABILITY FIX
@@ -140,9 +151,12 @@
     }
 
     // -----------------------------------------------------------------
-    // DODGE BEHAVIOR (INSTANT TELEPORT)
+    // DODGE BEHAVIOR (LINEAR ANIMATION, STRICT BOUNDARIES)
     // -----------------------------------------------------------------
     function dodgeImage(triggerJumpscare){
+      if (dodging) return;
+      dodging = true;
+
       const frameRect = imgFrame.getBoundingClientRect();
       
       // Calculate a strict safe zone (15% away from all screen edges)
@@ -150,10 +164,12 @@
       const marginY = window.innerHeight * 0.15; 
 
       const minX = marginX;
-      const minY = Math.max(marginY, 40); // ensure it stays below the titlebar
+      const minY = Math.max(marginY, 40); // Ensure it stays below the titlebar
       const maxX = window.innerWidth  - frameRect.width  - marginX;
       const maxY = window.innerHeight - frameRect.height - marginY;
 
+      const startX = frameRect.left;
+      const startY = frameRect.top;
       const targetX = minX + Math.random() * Math.max(1, (maxX - minX));
       const targetY = minY + Math.random() * Math.max(1, (maxY - minY));
 
@@ -175,13 +191,27 @@
         }, 600);
       }
 
-      // INSTANT teleport to new coordinates
-      imgFrame.style.left = targetX + 'px';
-      imgFrame.style.top  = targetY + 'px';
+      // Linear animation logic (350 milliseconds duration)
+      const duration = 350;
+      const t0 = performance.now();
+
+      function frame(now){
+        const t = Math.min((now - t0) / duration, 1);
+        const x = startX + (targetX - startX) * t;
+        const y = startY + (targetY - startY) * t;
+        imgFrame.style.left = x + 'px';
+        imgFrame.style.top  = y + 'px';
+
+        if (t < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          dodging = false; // unlock interaction when animation finishes
+        }
+      }
+      requestAnimationFrame(frame);
     }
 
     window.addEventListener('load', () => {
-      // Center the image initially
       const frameRect = imgFrame.getBoundingClientRect();
       const startX = (window.innerWidth - frameRect.width) / 2;
       const startY = (window.innerHeight - frameRect.height) / 2;
@@ -213,8 +243,14 @@
     function triggerPrank(){
       playAudioReliably(popupAudio);
 
-      const popupW = 400;
-      const popupH = 400;
+      // Get the screen dimensions to make sure the popup isn't larger than the monitor
+      const sw = window.screen.availWidth;
+      const sh = window.screen.availHeight;
+
+      // Use original image size, but cap it so it has room to jump on the screen
+      const popupW = Math.min(originalPopupW, sw - 100);
+      const popupH = Math.min(originalPopupH, sh - 200);
+
       const popup = window.open('', '_blank', `width=${popupW},height=${popupH}`);
 
       if (popup) {
@@ -283,6 +319,8 @@
     const beatDuration = 60 / BPM;
     const riseFraction = 0.6;
     const fallFraction = 0.4;
+    
+    // Dynamic jump height based on image size and screen
     const jumpHeight = Math.min(260, screenH - winH - 20);
     const groundY = screenH - winH;
 
