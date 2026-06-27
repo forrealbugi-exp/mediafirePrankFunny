@@ -1,0 +1,186 @@
+<title>Click Me</title>
+<style>
+    --bg: #0b0b0f;
+  }
+  *{
+    margin:0; padding:0; box-sizing:border-box;
+  }
+  html, body{
+    height:100%;
+    width:100%;
+    align-items:center;
+    overflow:hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+
+  .stage{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .click-card{
+    cursor:pointer;
+    border:none;
+    background:none;
+    padding:0;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+    transition: transform 0.15s ease;
+    max-width: 80vw;
+    max-height: 80vh;
+  }
+
+  .click-card:hover{
+    transform: scale(1.03);
+  }
+
+  .click-card:active{
+    transform: scale(0.97);
+  }
+
+  .click-card img{
+    display:block;
+    width:100%;
+    height:100%;
+    max-width: 80vw;
+    max-height: 80vh;
+    object-fit: contain;
+    pointer-events:none;
+    user-select:none;
+  }
+
+  .hint{
+    position:absolute;
+    bottom:30px;
+    left:0;
+    right:0;
+    text-align:center;
+    color:#666;
+    font-size:14px;
+    letter-spacing:0.5px;
+    animation: pulse 2s infinite ease-in-out;
+  }
+
+  @keyframes pulse{
+    0%, 100% { opacity:0.4; }
+    50% { opacity:1; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="stage">
+    <button class="click-card" id="trigger" aria-label="click">
+      <img src="https://i.pinimg.com/736x/2d/d1/44/2dd144d06dbadf92ad4314953ae117d4.jpg" alt="click me" draggable="false">
+    </button>
+    <div class="hint">click the image</div>
+  </div>
+
+<script>
+(function(){
+  var triggered = false;
+  var btn = document.getElementById('trigger');
+
+  btn.addEventListener('click', function(){
+    if (triggered) return; // only fire once
+    triggered = true;
+    launchPrankWindow();
+  });
+
+  function launchPrankWindow(){
+    // Open a small popup window. Width/height kept modest so it can bounce
+    // around the screen freely.
+    var w = 380, h = 380;
+    var startLeft = Math.max(0, Math.round((screen.width - w) / 2));
+    var startTop = Math.max(0, Math.round((screen.height - h) / 2));
+
+    var features = [
+      'width=' + w,
+      'height=' + h,
+      'left=' + startLeft,
+      'top=' + startTop,
+      'menubar=no',
+      'toolbar=no',
+      'location=no',
+      'status=no',
+      'resizable=no',
+      'scrollbars=no'
+    ].join(',');
+
+    var win = window.open('', 'prankWindow', features);
+
+    if (!win){
+      alert('Popup blocked! Please allow popups for this page and click again.');
+      triggered = false;
+      return;
+    }
+
+    var doc = win.document;
+    doc.open();
+    doc.write(buildPopupHTML());
+    doc.close();
+  }
+
+  function buildPopupHTML(){
+    return [
+      '<!DOCTYPE html>',
+      '<html><head><meta charset="UTF-8"><title>:)</title>',
+      '<style>',
+      'html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden;}',
+      'img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;pointer-events:none;}',
+      '</style></head>',
+      '<body>',
+      '<img src="https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg" alt="">',
+      '<audio id="prankAudio" src="https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3" loop autoplay></audio>',
+      '<script>',
+      '(function(){',
+      '  var w = ' + 380 + ', h = ' + 380 + ';',
+      '  var sw = screen.width, sh = screen.height;',
+      '  var x = window.screenX || window.screenLeft || 0;',
+      '  var y = window.screenY || window.screenTop || 0;',
+      '  var vx = 14, vy = 11;', // pixels per tick - speed of the bounce
+      '  var audio = document.getElementById("prankAudio");',
+      '  function tryPlay(){',
+      '    var p = audio.play();',
+      '    if (p && p.catch) { p.catch(function(){ setTimeout(tryPlay, 300); }); }',
+      '  }',
+      '  tryPlay();',
+      '  function tick(){',
+      '    x += vx;',
+      '    y += vy;',
+      '    if (x <= 0){ x = 0; vx = Math.abs(vx); }',
+      '    if (x + w >= sw){ x = sw - w; vx = -Math.abs(vx); }',
+      '    if (y <= 0){ y = 0; vy = Math.abs(vy); }',
+      '    if (y + h >= sh){ y = sh - h; vy = -Math.abs(vy); }',
+      '    try { window.moveTo(x, y); } catch(e){}',
+      '    requestAnimationFrame(tick);',
+      '  }',
+      '  requestAnimationFrame(tick);',
+      '  // Slight wobble/jump effect added on top of the bounce by occasionally',
+      '  // nudging the velocity, so the motion feels less like a perfect bounce',
+      '  // and more like an erratic jumpy window.',
+      '  setInterval(function(){',
+      '    vx += (Math.random() - 0.5) * 6;',
+      '    vy += (Math.random() - 0.5) * 6;',
+      '    var maxSpeed = 22, minSpeed = 8;',
+      '    var sign = function(n){ return n < 0 ? -1 : 1; };',
+      '    if (Math.abs(vx) > maxSpeed) vx = sign(vx) * maxSpeed;',
+      '    if (Math.abs(vy) > maxSpeed) vy = sign(vy) * maxSpeed;',
+      '    if (Math.abs(vx) < minSpeed) vx = sign(vx) * minSpeed;',
+      '    if (Math.abs(vy) < minSpeed) vy = sign(vy) * minSpeed;',
+      '  }, 250);',
+      '})();',
+      '<\/script>',
+      '</body></html>'
+    ].join('\n');
+  }
+})();
+</script>
+
+</body>
+</html>
