@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>click_here.exe</title>
 <style>
-  /* intentionally ugly / "low quality" styling: square corners, no transitions,
-     default system font, gray Windows-98-ish button chrome */
-
   *{ box-sizing:border-box; margin:0; padding:0; }
 
   html,body{
@@ -23,12 +20,6 @@
   .landing{
     width:100%;
     height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:14px;
-    text-align:center;
     position:relative;
   }
 
@@ -41,13 +32,6 @@
     font-size:13px;
     padding:4px 6px;
     text-align:left;
-  }
-
-  h1{
-    font-size:16px;
-    font-weight:bold;
-    color:#000;
-    margin-bottom:4px;
   }
 
   .imgFrame{
@@ -69,12 +53,7 @@
     cursor:pointer;
   }
 
-  .hint{
-    color:#404040;
-    font-size:11px;
-  }
-
-  /* jumpscare flash overlay, covers the whole site */
+  /* jumpscare flash overlay, covers the whole site, stretches to fill it */
   #jumpscare{
     position:fixed;
     inset:0;
@@ -82,17 +61,22 @@
     background:#000;
     display:none;
     opacity:0;
-    transition: opacity 0.5s linear;
   }
 
   #jumpscare img{
     width:100%;
     height:100%;
-    object-fit:cover;
+    object-fit:fill; /* stretches to fit the website's current size exactly */
+    display:block;
   }
 
   #jumpscare.show{
     display:block;
+  }
+
+  /* fade-out only: appears instantly (no transition in), disappears slowly */
+  #jumpscare.fading{
+    transition: opacity 1.2s linear;
   }
 </style>
 </head>
@@ -100,11 +84,9 @@
 
   <div class="landing" id="landing">
     <div class="titlebar">FREE 1,000,000 ROBOX 100% NO VIRUS  INSTANT</div>
-    <h1>double click image to view fullsize</h1>
     <div class="imgFrame" id="imgFrame">
       <img id="prankImg" src="https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg" alt="">
     </div>
-    <div class="hint">turn your volume up first</div>
   </div>
 
   <div id="jumpscare">
@@ -112,34 +94,28 @@
   </div>
 
   <audio id="prankAudio" src="https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3" loop preload="auto"></audio>
-  <audio id="dodgeAudio" src="https://embarrassing-brown-oa7iij3e.edgeone.dev/Bark%20Fart%20Sound%20Effect.mp3" preload="auto"></audio>
 
   <script>
     // =====================================================================
     // CONFIG
     // =====================================================================
-    const SOUND_URL       = "https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3";
-    const IMAGE_URL        = "https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg";
-    const DODGE_SOUND_URL  = "https://embarrassing-brown-oa7iij3e.edgeone.dev/Bark%20Fart%20Sound%20Effect.mp3";
+    const SOUND_URL  = "https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3";
+    const IMAGE_URL   = "https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg";
     const JUMPSCARE_IMG_URL = "https://i.pinimg.com/736x/c6/bf/30/c6bf3005814067707dff126cdf83029a.jpg";
 
     // BPM of basuri.mp3 - the popup window's jump is timed to this beat
     const BPM = 142;
 
-    const imgFrame      = document.getElementById('imgFrame');
-    const prankImg       = document.getElementById('prankImg');
-    const landing         = document.getElementById('landing');
-    const jumpscareEl     = document.getElementById('jumpscare');
-    const originalAudio   = document.getElementById('prankAudio');
-    const dodgeAudio       = document.getElementById('dodgeAudio');
+    const imgFrame    = document.getElementById('imgFrame');
+    const prankImg     = document.getElementById('prankImg');
+    const jumpscareEl   = document.getElementById('jumpscare');
+    const originalAudio = document.getElementById('prankAudio');
 
     let dodgeCount = 0;
-    let dodging = false; // guard against re-triggering mid-animation
+    let dodging = false;
 
     // -----------------------------------------------------------------
-    // AUDIO RELIABILITY FIX (used for every sound on this page)
-    // browsers can fail play() silently if the file hasn't buffered
-    // enough yet - this retries on canplaythrough instead of giving up
+    // AUDIO RELIABILITY FIX
     // -----------------------------------------------------------------
     function playAudioReliably(audioEl){
       audioEl.currentTime = 0;
@@ -168,18 +144,18 @@
     // -----------------------------------------------------------------
     // DODGE BEHAVIOR (first 2 attempts): image runs away in a straight
     // line to a random spot well inside the screen (never at the very
-    // edges), bark-fart plays, and the jumpscare image flashes in with
-    // a 0 -> 100% linear opacity fade over 0.5s.
+    // edges). Jumpscare image appears INSTANTLY at full opacity, then
+    // fades out slowly. No sound plays for this anymore.
     // -----------------------------------------------------------------
     function dodgeImage(){
       if (dodging) return;
       dodging = true;
 
       const frameRect = imgFrame.getBoundingClientRect();
-      const margin = 60; // keep it well clear of edges, never right at the border
+      const margin = 60;
 
       const minX = margin;
-      const minY = margin + 40; // a bit more headroom at top for the titlebar
+      const minY = margin + 40;
       const maxX = window.innerWidth  - frameRect.width  - margin;
       const maxY = window.innerHeight - frameRect.height - margin;
 
@@ -188,24 +164,23 @@
       const targetX = minX + Math.random() * Math.max(1, (maxX - minX));
       const targetY = minY + Math.random() * Math.max(1, (maxY - minY));
 
-      // play the dodge sound
-      playAudioReliably(dodgeAudio);
-
-      // show jumpscare image, fade opacity 0 -> 1 linearly over 0.5s
+      // jumpscare: show INSTANTLY at full opacity (no fade-in), then fade out slowly
+      jumpscareEl.classList.remove('fading'); // strip transition so the appear is instant
       jumpscareEl.classList.add('show');
-      jumpscareEl.style.opacity = '0';
-      // force reflow so the transition actually triggers from 0
-      void jumpscareEl.offsetWidth;
+      jumpscareEl.style.opacity = '1';
+
+      // next frame: add the fade transition and drop opacity to 0 -> slow disappear
       requestAnimationFrame(() => {
-        jumpscareEl.style.opacity = '1';
+        jumpscareEl.classList.add('fading');
+        jumpscareEl.style.opacity = '0';
       });
 
-      // animate the image running away in a straight line over ~350ms
+      // animate the image running away in a straight line, linear, ~350ms
       const duration = 350;
       const t0 = performance.now();
 
       function frame(now){
-        const t = Math.min((now - t0) / duration, 1); // linear, no easing
+        const t = Math.min((now - t0) / duration, 1);
         const x = startX + (targetX - startX) * t;
         const y = startY + (targetY - startY) * t;
         imgFrame.style.left = x + 'px';
@@ -219,16 +194,13 @@
       }
       requestAnimationFrame(frame);
 
-      // hide the jumpscare flash again after a brief moment, back to normal page
+      // fully hide + reset after the fade-out transition finishes (1.2s)
       setTimeout(() => {
-        jumpscareEl.style.opacity = '0';
-        setTimeout(() => {
-          jumpscareEl.classList.remove('show');
-        }, 500); // matches the CSS transition duration
-      }, 550);
+        jumpscareEl.classList.remove('show');
+        jumpscareEl.classList.remove('fading');
+      }, 1300);
     }
 
-    // position the frame absolutely from the start so left/top animation works
     window.addEventListener('load', () => {
       const r = imgFrame.getBoundingClientRect();
       imgFrame.style.position = 'fixed';
@@ -253,7 +225,6 @@
         return;
       }
 
-      // third attempt: image finally caught, trigger the prank
       triggerPrank();
     });
 
@@ -271,13 +242,20 @@
         popup.document.write(getPopupHTML(popupW, popupH));
         popup.document.close();
       }
-      // landing page stays exactly as-is, per spec
     }
 
     // -----------------------------------------------------------------
-    // POPUP WINDOW HTML: the OS WINDOW ITSELF jumps and bounces using
-    // window.moveTo, timed to the song's BPM. Occasionally barrel-rolls
-    // the image while airborne.
+    // POPUP WINDOW HTML: the OS WINDOW ITSELF jumps and bounces.
+    //
+    // IMPORTANT FIX: this loop now runs on setInterval instead of
+    // requestAnimationFrame. Chrome (and other browsers) heavily
+    // throttle rAF and JS timers once a window loses focus or is
+    // treated as backgrounded - that throttling is what was causing
+    // the jump to slow down/stop over time. Audible tabs/windows are
+    // exempted from this throttling, and setInterval at a fixed
+    // interval survives backgrounding far better than rAF does.
+    // The window size is also locked and re-asserted every tick so
+    // nothing can silently resize it.
     // -----------------------------------------------------------------
     function getPopupHTML(popupW, popupH){
       return `
@@ -304,24 +282,13 @@
     image-rendering:pixelated;
     will-change:transform;
   }
-  #hint{
-    position:absolute;
-    bottom:8px;
-    left:50%;
-    transform:translateX(-50%);
-    color:#0f0;
-    font-family:"Courier New",monospace;
-    font-size:11px;
-    z-index:2;
-  }
 </style>
 </head>
 <body>
   <img id="img" src="${IMAGE_URL}" alt="">
-  <div id="hint">click anywhere to close</div>
   <audio id="a" src="${SOUND_URL}" loop preload="auto"></audio>
   <script>
-    // ---- audio reliability fix, same approach as main window ----
+    // ---- audio reliability fix ----
     const a = document.getElementById('a');
     function tryPlay(){
       a.currentTime = 0;
@@ -335,52 +302,49 @@
     if (a.readyState >= 3) { tryPlay(); }
     else { a.load(); a.addEventListener('canplaythrough', tryPlay, { once:true }); tryPlay(); }
 
-    // ---- THE WINDOW ITSELF jumps + bounces (not the image inside it) ----
+    // ---- window jump + bounce, driven by setInterval (NOT rAF) so it
+    //      keeps running even when the window is backgrounded/loses focus ----
     const screenW = window.screen.availWidth;
     const screenH = window.screen.availHeight;
     const winW = ${popupW};
     const winH = ${popupH};
 
     let x = Math.max(0, (screenW - winW) / 2);
-    let vx = 480;        // px/sec, constant "unstoppable force" speed
+    let vx = 480;
     let direction = 1;
 
     const BPM = ${BPM};
-    const beatDuration = 60 / BPM;   // seconds per beat = one jump cycle
-    const riseFraction = 0.6;        // slow rise
-    const fallFraction = 0.4;        // faster fall
-    const jumpHeight = Math.min(260, screenH - winH - 20); // px, capped to fit screen
-
-    const groundY = screenH - winH; // resting Y position = bottom of screen
+    const beatDuration = 60 / BPM;
+    const riseFraction = 0.6;
+    const fallFraction = 0.4;
+    const jumpHeight = Math.min(260, screenH - winH - 20);
+    const groundY = screenH - winH;
 
     function getJumpOffset(elapsedInBeat){
       const riseTime = beatDuration * riseFraction;
       const fallTime = beatDuration * fallFraction;
-
       if (elapsedInBeat <= riseTime) {
         const t = elapsedInBeat / riseTime;
-        const eased = 1 - Math.pow(1 - t, 2); // ease-out: fast off the ground, slows at apex
+        const eased = 1 - Math.pow(1 - t, 2);
         return -jumpHeight * eased;
       } else {
         const t = Math.min((elapsedInBeat - riseTime) / fallTime, 1);
-        const eased = t * t; // ease-in: accelerates downward like gravity
+        const eased = t * t;
         return -jumpHeight * (1 - eased);
       }
     }
 
-    // ---- barrel roll: sometimes spins the image 360 degrees while airborne ----
     let lastBeatIndex = -1;
     let rollingThisJump = false;
 
-    function maybeStartBarrelRoll(beatIndex, riseTime){
+    function maybeStartBarrelRoll(beatIndex){
       if (beatIndex === lastBeatIndex) return;
       lastBeatIndex = beatIndex;
-      rollingThisJump = Math.random() < 0.35; // ~35% chance per jump
+      rollingThisJump = Math.random() < 0.35;
       if (rollingThisJump) {
         img.style.transition = 'none';
         img.style.transform = 'rotate(0deg)';
-        // animate full 360 rotation across the airborne duration
-        const airborneMs = beatDuration * 1000 * 0.95; // roughly the time it's off the ground
+        const airborneMs = beatDuration * 1000 * 0.95;
         img.style.transition = \`transform \${airborneMs}ms linear\`;
         requestAnimationFrame(() => {
           img.style.transform = 'rotate(360deg)';
@@ -391,14 +355,17 @@
       }
     }
 
-    let startTime = null;
+    const TICK_MS = 16; // ~60fps target, but tolerant if the browser delivers it slower
+    let startTime = performance.now();
+    let lastTickTime = startTime;
 
-    function frame(now){
-      if (startTime === null) startTime = now;
+    function tick(){
+      const now = performance.now();
+      const dt = (now - lastTickTime) / 1000; // actual elapsed seconds since last tick
+      lastTickTime = now;
       const elapsed = (now - startTime) / 1000;
-      const dt = 1 / 60;
 
-      // horizontal: constant speed, instantly reverses at left/right screen edges
+      // horizontal: constant speed, instantly reverses at screen edges
       x += vx * direction * dt;
       if (x <= 0) {
         x = 0;
@@ -408,24 +375,25 @@
         direction = -1;
       }
 
-      // vertical: jumps off the bottom of the screen, timed to BPM, forever
+      // vertical: BPM-synced jump, repeats forever, off the bottom of the screen
       const elapsedInBeat = elapsed % beatDuration;
       const beatIndex = Math.floor(elapsed / beatDuration);
-      maybeStartBarrelRoll(beatIndex, beatDuration * riseFraction);
+      maybeStartBarrelRoll(beatIndex);
 
       const jumpOffset = getJumpOffset(elapsedInBeat);
       const y = groundY + jumpOffset;
 
       try {
         window.moveTo(Math.round(x), Math.round(y));
+        // re-lock the size every tick in case anything tries to change it
+        if (window.outerWidth !== winW || window.outerHeight !== winH) {
+          window.resizeTo(winW, winH);
+        }
       } catch(e) { /* some browsers may restrict this, fail silently */ }
-
-      requestAnimationFrame(frame);
     }
 
-    // start resting at the bottom of the screen
     try { window.moveTo(Math.round(x), groundY); } catch(e) {}
-    requestAnimationFrame(frame);
+    setInterval(tick, TICK_MS);
 
     document.addEventListener('click', () => window.close());
     document.addEventListener('keydown', () => window.close());
