@@ -101,6 +101,7 @@
     const POPUP_IMAGE_URL = "https://i.pinimg.com/1200x/06/f4/13/06f41331dc778762234ef181f7dc5178.jpg";
 
     const BPM = 142;
+    const POPUP_SCALE = 0.4; // Multiplier to make the popup smaller (0.4 = 40% size)
 
     const imgFrame    = document.getElementById('imgFrame');
     const prankImg    = document.getElementById('prankImg');
@@ -159,12 +160,11 @@
 
       const frameRect = imgFrame.getBoundingClientRect();
       
-      // Calculate a strict safe zone (15% away from all screen edges)
       const marginX = window.innerWidth * 0.15; 
       const marginY = window.innerHeight * 0.15; 
 
       const minX = marginX;
-      const minY = Math.max(marginY, 40); // Ensure it stays below the titlebar
+      const minY = Math.max(marginY, 40);
       const maxX = window.innerWidth  - frameRect.width  - marginX;
       const maxY = window.innerHeight - frameRect.height - marginY;
 
@@ -174,21 +174,25 @@
       const targetY = minY + Math.random() * Math.max(1, (maxY - minY));
 
       if (triggerJumpscare) {
+        // Sound plays instantly on click
         playAudioReliably(fartAudio);
         
-        jumpscareEl.classList.remove('fading'); 
-        jumpscareEl.classList.add('show');
-        jumpscareEl.style.opacity = '1';
-
-        requestAnimationFrame(() => {
-          jumpscareEl.classList.add('fading');
-          jumpscareEl.style.opacity = '0';
-        });
-
+        // Jumpscare visual delayed by 0.2 seconds (200ms)
         setTimeout(() => {
-          jumpscareEl.classList.remove('show');
-          jumpscareEl.classList.remove('fading');
-        }, 600);
+          jumpscareEl.classList.remove('fading'); 
+          jumpscareEl.classList.add('show');
+          jumpscareEl.style.opacity = '1';
+
+          requestAnimationFrame(() => {
+            jumpscareEl.classList.add('fading');
+            jumpscareEl.style.opacity = '0';
+          });
+
+          setTimeout(() => {
+            jumpscareEl.classList.remove('show');
+            jumpscareEl.classList.remove('fading');
+          }, 600); // 500ms fade + 100ms buffer
+        }, 200); 
       }
 
       // Linear animation logic (350 milliseconds duration)
@@ -205,7 +209,7 @@
         if (t < 1) {
           requestAnimationFrame(frame);
         } else {
-          dodging = false; // unlock interaction when animation finishes
+          dodging = false;
         }
       }
       requestAnimationFrame(frame);
@@ -243,13 +247,17 @@
     function triggerPrank(){
       playAudioReliably(popupAudio);
 
-      // Get the screen dimensions to make sure the popup isn't larger than the monitor
-      const sw = window.screen.availWidth;
-      const sh = window.screen.availHeight;
+      // Scale down the window popup to make it smaller
+      let popupW = originalPopupW * POPUP_SCALE;
+      let popupH = originalPopupH * POPUP_SCALE;
+      
+      // Hard cap the size just in case the original image was massive
+      popupW = Math.min(popupW, 300);
+      popupH = Math.min(popupH, 300);
 
-      // Use original image size, but cap it so it has room to jump on the screen
-      const popupW = Math.min(originalPopupW, sw - 100);
-      const popupH = Math.min(originalPopupH, sh - 200);
+      // Ensure window dimensions are integers
+      popupW = Math.round(popupW);
+      popupH = Math.round(popupH);
 
       const popup = window.open('', '_blank', `width=${popupW},height=${popupH}`);
 
@@ -320,7 +328,6 @@
     const riseFraction = 0.6;
     const fallFraction = 0.4;
     
-    // Dynamic jump height based on image size and screen
     const jumpHeight = Math.min(260, screenH - winH - 20);
     const groundY = screenH - winH;
 
