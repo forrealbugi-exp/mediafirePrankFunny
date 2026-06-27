@@ -3,193 +3,285 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Click Me</title>
+<title>loading...</title>
 <style>
   :root{
-    --bg: #0b0b0f;
+    --bg:#0a0a0a;
+    --text:#e8e8e8;
+    --accent:#ff2d2d;
+    --muted:#666;
   }
-  *{
-    margin:0; padding:0; box-sizing:border-box;
-  }
-  html, body{
-    height:100%;
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html,body{
     width:100%;
-    background: var(--bg);
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Courier New', monospace;
     overflow:hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   }
 
-  .stage{
-    position:relative;
+  /* ---------- LANDING PAGE ---------- */
+  .landing{
     width:100%;
-    height:100%;
+    height:100vh;
     display:flex;
+    flex-direction:column;
     align-items:center;
     justify-content:center;
+    gap:24px;
+    text-align:center;
+    padding:20px;
   }
 
-  .click-card{
+  .landing h1{
+    font-size:clamp(20px, 5vw, 32px);
+    letter-spacing:1px;
+    color:var(--muted);
+    font-weight:400;
+  }
+
+  .btn{
+    background:transparent;
+    border:2px solid var(--text);
+    color:var(--text);
+    font-family:inherit;
+    font-size:18px;
+    padding:16px 40px;
     cursor:pointer;
-    border:none;
-    background:none;
-    padding:0;
-    border-radius:18px;
-    overflow:hidden;
-    box-shadow: 0 0 40px rgba(0,0,0,0.6);
-    transition: transform 0.15s ease;
-    max-width: 80vw;
-    max-height: 80vh;
+    letter-spacing:2px;
+    transition:transform .15s ease, background .15s ease, color .15s ease;
   }
 
-  .click-card:hover{
-    transform: scale(1.03);
+  .btn:hover{
+    background:var(--text);
+    color:#000;
+    transform:scale(1.04);
   }
 
-  .click-card:active{
-    transform: scale(0.97);
-  }
-
-  .click-card img{
-    display:block;
-    width:100%;
-    height:100%;
-    max-width: 80vw;
-    max-height: 80vh;
-    object-fit: contain;
-    pointer-events:none;
-    user-select:none;
+  .btn:active{
+    transform:scale(.97);
   }
 
   .hint{
-    position:absolute;
-    bottom:30px;
-    left:0;
-    right:0;
-    text-align:center;
-    color:#666;
-    font-size:14px;
-    letter-spacing:0.5px;
-    animation: pulse 2s infinite ease-in-out;
+    color:var(--muted);
+    font-size:12px;
   }
 
-  @keyframes pulse{
-    0%, 100% { opacity:0.4; }
-    50% { opacity:1; }
+  /* ---------- PRANK SCREEN (fallback if popup is blocked) ---------- */
+  .prank-screen{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:#000;
+    overflow:hidden;
+  }
+
+  .prank-screen.active{
+    display:block;
+  }
+
+  .prank-img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    filter:contrast(1.15) saturate(1.3);
+  }
+
+  @keyframes shake{
+    0%{ transform:translate(0,0) rotate(0deg); }
+    10%{ transform:translate(-12px,-8px) rotate(-1deg); }
+    20%{ transform:translate(10px,6px) rotate(1deg); }
+    30%{ transform:translate(-8px,10px) rotate(-2deg); }
+    40%{ transform:translate(12px,-6px) rotate(2deg); }
+    50%{ transform:translate(-10px,-10px) rotate(-1deg); }
+    60%{ transform:translate(8px,8px) rotate(1deg); }
+    70%{ transform:translate(-12px,4px) rotate(-2deg); }
+    80%{ transform:translate(10px,-8px) rotate(2deg); }
+    90%{ transform:translate(-6px,6px) rotate(-1deg); }
+    100%{ transform:translate(0,0) rotate(0deg); }
+  }
+
+  .shaking{
+    animation: shake .35s infinite;
+  }
+
+  .glitch-overlay{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    mix-blend-mode:screen;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        rgba(255,0,60,0.08) 0px,
+        rgba(255,0,60,0.08) 2px,
+        transparent 2px,
+        transparent 4px
+      );
+    animation: flicker .12s steps(2) infinite;
+  }
+
+  @keyframes flicker{
+    0%{ opacity:.9; }
+    50%{ opacity:.4; }
+    100%{ opacity:.8; }
+  }
+
+  .glitch-overlay::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:var(--accent);
+    opacity:0;
+    animation: flash 1.4s ease-in-out infinite;
+  }
+
+  @keyframes flash{
+    0%, 92%, 100%{ opacity:0; }
+    94%{ opacity:.25; }
+    96%{ opacity:0; }
+  }
+
+  .vignette{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    box-shadow: inset 0 0 200px 60px rgba(0,0,0,0.85);
+  }
+
+  .close-hint{
+    position:absolute;
+    bottom:16px;
+    left:50%;
+    transform:translateX(-50%);
+    color:rgba(255,255,255,0.35);
+    font-size:11px;
+    letter-spacing:1px;
+    z-index:10;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .shaking{ animation:none; }
+    .glitch-overlay{ animation:none; }
+    .glitch-overlay::before{ animation:none; }
   }
 </style>
 </head>
 <body>
 
-  <div class="stage">
-    <button class="click-card" id="trigger" aria-label="click">
-      <img src="https://i.pinimg.com/736x/2d/d1/44/2dd144d06dbadf92ad4314953ae117d4.jpg" alt="click me" draggable="false">
-    </button>
-    <div class="hint">click the image</div>
+  <!-- this is what the friend sees first, in the link they were sent -->
+  <div class="landing" id="landing">
+    <h1>are you sure you want to continue?</h1>
+    <button class="btn" id="trigger">CLICK ME</button>
+    <div class="hint">turn your volume up first</div>
   </div>
 
-<script>
-(function(){
-  var triggered = false;
-  var btn = document.getElementById('trigger');
+  <!-- fallback prank screen, only used if the popup window gets blocked -->
+  <div class="prank-screen" id="prankScreen">
+    <img class="prank-img shaking" id="prankImg" src="https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg" alt="">
+    <div class="glitch-overlay"></div>
+    <div class="vignette"></div>
+    <div class="close-hint">click anywhere to close</div>
+  </div>
 
-  btn.addEventListener('click', function(){
-    if (triggered) return; // only fire once
-    triggered = true;
-    launchPrankWindow();
-  });
+  <audio id="prankAudio" src="https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3" loop preload="auto"></audio>
 
-  function launchPrankWindow(){
-    // Open a small popup window. Width/height kept modest so it can bounce
-    // around the screen freely.
-    var w = 380, h = 380;
-    var startLeft = Math.max(0, Math.round((screen.width - w) / 2));
-    var startTop = Math.max(0, Math.round((screen.height - h) / 2));
+  <script>
+    const SOUND_URL = "https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3";
+    const IMAGE_URL = "https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg";
 
-    var features = [
-      'width=' + w,
-      'height=' + h,
-      'left=' + startLeft,
-      'top=' + startTop,
-      'menubar=no',
-      'toolbar=no',
-      'location=no',
-      'status=no',
-      'resizable=no',
-      'scrollbars=no'
-    ].join(',');
+    const trigger      = document.getElementById('trigger');
+    const landing       = document.getElementById('landing');
+    const originalAudio = document.getElementById('prankAudio');
 
-    var win = window.open('', 'prankWindow', features);
+    trigger.addEventListener('click', () => {
 
-    if (!win){
-      alert('Popup blocked! Please allow popups for this page and click again.');
-      triggered = false;
-      return;
+      // 1) play the sound in THIS (original) tab/window
+      originalAudio.currentTime = 0;
+      originalAudio.play().catch(() => {
+        // autoplay might be blocked until a user gesture, but this click IS the gesture
+      });
+
+      // 2) open a brand new window that also plays the sound and shows the prank screen
+      const popup = window.open('', '_blank', 'fullscreen=yes');
+
+      if (popup) {
+        popup.document.write(getPopupHTML());
+        popup.document.close();
+      } else {
+        // popup blocked: fall back to showing the prank fullscreen in the SAME window
+        showPrankInPlace();
+      }
+    });
+
+    function showPrankInPlace(){
+      landing.style.display = 'none';
+      document.getElementById('prankScreen').classList.add('active');
+      document.body.addEventListener('click', () => location.reload());
     }
 
-    var doc = win.document;
-    doc.open();
-    doc.write(buildPopupHTML());
-    doc.close();
+    function getPopupHTML(){
+      return `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>:)</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;background:#000;overflow:hidden;cursor:pointer;}
+  .wrap{position:fixed;inset:0;}
+  img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    filter:contrast(1.15) saturate(1.3);
+    animation: shake .35s infinite;
   }
-
-  function buildPopupHTML(){
-    return [
-      '<!DOCTYPE html>',
-      '<html><head><meta charset="UTF-8"><title>:)</title>',
-      '<style>',
-      'html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden;}',
-      'img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;pointer-events:none;}',
-      '</style></head>',
-      '<body>',
-      '<img src="https://i.pinimg.com/736x/98/5f/64/985f6478f070be18728e1a979b23026d.jpg" alt="">',
-      '<audio id="prankAudio" src="https://worldwide-cyan-citufupp.edgeone.dev/basuri.mp3" loop autoplay></audio>',
-      '<script>',
-      '(function(){',
-      '  var w = ' + 380 + ', h = ' + 380 + ';',
-      '  var sw = screen.width, sh = screen.height;',
-      '  var x = window.screenX || window.screenLeft || 0;',
-      '  var y = window.screenY || window.screenTop || 0;',
-      '  var vx = 14, vy = 11;', // pixels per tick - speed of the bounce
-      '  var audio = document.getElementById("prankAudio");',
-      '  function tryPlay(){',
-      '    var p = audio.play();',
-      '    if (p && p.catch) { p.catch(function(){ setTimeout(tryPlay, 300); }); }',
-      '  }',
-      '  tryPlay();',
-      '  function tick(){',
-      '    x += vx;',
-      '    y += vy;',
-      '    if (x <= 0){ x = 0; vx = Math.abs(vx); }',
-      '    if (x + w >= sw){ x = sw - w; vx = -Math.abs(vx); }',
-      '    if (y <= 0){ y = 0; vy = Math.abs(vy); }',
-      '    if (y + h >= sh){ y = sh - h; vy = -Math.abs(vy); }',
-      '    try { window.moveTo(x, y); } catch(e){}',
-      '    requestAnimationFrame(tick);',
-      '  }',
-      '  requestAnimationFrame(tick);',
-      '  // Slight wobble/jump effect added on top of the bounce by occasionally',
-      '  // nudging the velocity, so the motion feels less like a perfect bounce',
-      '  // and more like an erratic jumpy window.',
-      '  setInterval(function(){',
-      '    vx += (Math.random() - 0.5) * 6;',
-      '    vy += (Math.random() - 0.5) * 6;',
-      '    var maxSpeed = 22, minSpeed = 8;',
-      '    var sign = function(n){ return n < 0 ? -1 : 1; };',
-      '    if (Math.abs(vx) > maxSpeed) vx = sign(vx) * maxSpeed;',
-      '    if (Math.abs(vy) > maxSpeed) vy = sign(vy) * maxSpeed;',
-      '    if (Math.abs(vx) < minSpeed) vx = sign(vx) * minSpeed;',
-      '    if (Math.abs(vy) < minSpeed) vy = sign(vy) * minSpeed;',
-      '  }, 250);',
-      '})();',
-      '<\/script>',
-      '</body></html>'
-    ].join('\n');
+  @keyframes shake{
+    0%{transform:translate(0,0) rotate(0deg);}
+    10%{transform:translate(-12px,-8px) rotate(-1deg);}
+    20%{transform:translate(10px,6px) rotate(1deg);}
+    30%{transform:translate(-8px,10px) rotate(-2deg);}
+    40%{transform:translate(12px,-6px) rotate(2deg);}
+    50%{transform:translate(-10px,-10px) rotate(-1deg);}
+    60%{transform:translate(8px,8px) rotate(1deg);}
+    70%{transform:translate(-12px,4px) rotate(-2deg);}
+    80%{transform:translate(10px,-8px) rotate(2deg);}
+    90%{transform:translate(-6px,6px) rotate(-1deg);}
+    100%{transform:translate(0,0) rotate(0deg);}
   }
-})();
-</script>
+  .overlay{
+    position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
+    background:repeating-linear-gradient(0deg,rgba(255,0,60,0.08) 0px,rgba(255,0,60,0.08) 2px,transparent 2px,transparent 4px);
+    animation: flicker .12s steps(2) infinite;
+  }
+  @keyframes flicker{0%{opacity:.9;}50%{opacity:.4;}100%{opacity:.8;}}
+  .vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 200px 60px rgba(0,0,0,0.85);}
+  .hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.35);font-family:monospace;font-size:11px;letter-spacing:1px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <img src="${IMAGE_URL}" alt="">
+    <div class="overlay"></div>
+    <div class="vignette"></div>
+    <div class="hint">click anywhere to close</div>
+  </div>
+  <audio id="a" src="${SOUND_URL}" loop autoplay></audio>
+  <script>
+    const a = document.getElementById('a');
+    a.play().catch(()=>{});
+    document.addEventListener('click', () => window.close());
+    document.addEventListener('keydown', () => window.close());
+  <\/script>
+</body>
+</html>`;
+    }
+  </script>
 
 </body>
 </html>
